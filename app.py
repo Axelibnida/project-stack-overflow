@@ -1,42 +1,42 @@
 from flask import Flask, request, jsonify
-import gensim
-from gensim import corpora
+import nltk
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
+from gensim.models import LdaModel
+from gensim.corpora import Dictionary
 
 app = Flask(__name__)
 
-# Load the saved model and dictionary
-lda_model = gensim.models.LdaModel.load('lda_model')
-dictionary = gensim.corpora.Dictionary.load('dictionary.gensim')
+# Download stopwords data
+nltk.download('stopwords')
 
-stop_words = set(stopwords.words('english'))
 
-def preprocess(text):
-    result = []
-    for token in gensim.utils.simple_preprocess(text):
-        if token not in gensim.parsing.preprocessing.STOPWORDS and len(token) > 3 and token not in stop_words:
-            result.append(token)
-    return result
-
-def predict_topic(text):
-    # Preprocess the input text
-    processed_text = preprocess(text)
-
-    # Convert text to bag-of-words format
-    bow_text = dictionary.doc2bow(processed_text)
-
-    # Get the topic distribution of the text
-    topic_distribution = lda_model.get_document_topics(bow_text)
-
-    return topic_distribution
-
-@app.route('/predict', methods=['POST'])
+@app.route('/', methods=['POST'])
 def predict():
-    data = request.json
+    # Load the LDA model and dictionary
+    model = LdaModel.load('model')
+    dictionary = Dictionary.load('dictionary')
+
+    # Get the input text from the request
+    data = request.get_json()
     text = data['text']
-    result = predict_topic(text)
+
+    # Preprocess the input text
+    tokens = word_tokenize(text.lower())
+    tokens = [token for token in tokens if token.isalpha()]
+    tokens = [token for token in tokens if token not in stopwords.words('english')]
+
+    # Create a bag-of-words representation of the input text
+    bow = dictionary.doc2bow(tokens)
+
+    # Perform topic inference
+    topics = model[bow]
+
+    # Return the inferred topics
+    result = {'topics': topics}
     return jsonify(result)
+
 
 if __name__ == '__main__':
     app.run()
+
