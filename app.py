@@ -2,22 +2,10 @@ from flask import Flask, request, jsonify
 import gensim
 import pickle
 import nltk
+nltk.download('punkt')
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
 from nltk.tokenize import word_tokenize
-
-try:
-    nltk.data.find('tokenizers/punkt')
-except LookupError:
-    nltk.download('punkt')
-try:
-    nltk.data.find('tokenizers/wordnet')
-except LookupError:
-    nltk.download('wordnet')
-try:
-    nltk.data.find('tokenizers/stopwords')
-except LookupError:
-    nltk.download('stopwords')
 
 app = Flask(__name__)
 
