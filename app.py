@@ -41,5 +41,6 @@ def predict():
         tags = [dictionary[id] for id, _ in sorted_topics[:2]]
         return jsonify(tags)
 
+app.debug = True
 if __name__ == '__main__':
     app.run(port=5000)
