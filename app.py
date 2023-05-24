@@ -2,8 +2,7 @@ from flask import Flask, request, jsonify
 import nltk
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
-from gensim.models import LdaModel
-from gensim.corpora import Dictionary
+import pickle
 
 app = Flask(__name__)
 
@@ -14,8 +13,10 @@ nltk.download('punkt')
 @app.route('/predict', methods=['POST'])
 def predict():
     # Load the LDA model and dictionary
-    model = LdaModel.load('lda_model')
-    dictionary = Dictionary.load('dictionary.gensim')
+    with open('lda_model.pkl', 'rb') as f:
+        model = pickle.load(f)
+    with open('dictionary.pkl', 'rb') as f:
+        dictionary = pickle.load(f)
 
     # Get the input text from the request
     data = request.get_json()
@@ -39,4 +40,3 @@ def predict():
 
 if __name__ == '__main__':
     app.run()
-
