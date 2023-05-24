@@ -9,7 +9,7 @@ app = Flask(__name__)
 
 # Download stopwords data
 nltk.download('stopwords')
-
+nltk.download('punkt')
 
 @app.route('/predict', methods=['POST'])
 def predict():
