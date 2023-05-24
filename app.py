@@ -14,8 +14,8 @@ nltk.download('stopwords')
 @app.route('/', methods=['POST'])
 def predict():
     # Load the LDA model and dictionary
-    model = LdaModel.load('model')
-    dictionary = Dictionary.load('dictionary')
+    model = LdaModel.load('lda_model')
+    dictionary = Dictionary.load('dictionary.gensim')
 
     # Get the input text from the request
     data = request.get_json()
