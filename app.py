@@ -33,8 +33,11 @@ def predict():
     # Perform topic inference
     topics = model[bow]
 
+    # Convert topics to a JSON serializable format
+    topics_serializable = [(str(topic[0]), float(topic[1])) for topic in topics]
+
     # Return the inferred topics
-    result = {'topics': topics}
+    result = {'topics': topics_serializable}
     return jsonify(result)
 
 
