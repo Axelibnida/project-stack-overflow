@@ -23,6 +23,9 @@ def preprocess(text):
     tokenized_text = word_tokenize(text.lower())
     cleaned_text = [lemmatizer.lemmatize(t) for t in tokenized_text if t not in stop_words and t.isalpha()]
     return cleaned_text
+@app.route('/', methods=['GET'])
+def home():
+    return "Welcome to my LDA model API. Use /predict to access the model."
 
 @app.route('/predict', methods=['POST'])
 def predict():
