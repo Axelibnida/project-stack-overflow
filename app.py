@@ -12,7 +12,7 @@ nltk.download('stopwords')
 nltk.download('punkt')
 
 
-@app.route('/', methods=['POST'])
+@app.route('/predict', methods=['POST'])
 def predict():
     # Load the LDA model and dictionary
     model = LdaModel.load('lda_model')
