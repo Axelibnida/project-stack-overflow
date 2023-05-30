@@ -10,6 +10,20 @@ app = Flask(__name__)
 nltk.download('stopwords')
 nltk.download('punkt')
 
+# Define the topic tags
+topic_tags = {
+    0: 'Technology',
+    1: 'Sports',
+    2: 'Politics',
+    3: 'Health',
+    4: 'Entertainment',
+    5: 'Business',
+    6: 'Science',
+    7: 'Education',
+    8: 'Art',
+    9: 'Travel'
+}
+
 @app.route('/predict', methods=['POST'])
 def predict():
     # Load the LDA model and dictionary
@@ -34,7 +48,10 @@ def predict():
     topics = model[bow]
 
     # Convert topics to a JSON serializable format
-    topics_serializable = [(str(topic[0]), float(topic[1])) for topic in topics]
+    topics_serializable = [
+        {'topic': topic_tags[topic[0]], 'probability': float(topic[1])}
+        for topic in topics
+    ]
 
     # Return the inferred topics
     result = {'topics': topics_serializable}
