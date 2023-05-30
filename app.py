@@ -26,11 +26,17 @@ topic_tags = {
 
 @app.route('/predict', methods=['POST'])
 def predict():
-    # Load the LDA model and dictionary
+    # Load the models, dictionary, vectorizer and label binarizer
     with open('lda_model.pkl', 'rb') as f:
-        model = pickle.load(f)
+        lda_model = pickle.load(f)
+    with open('rf_model.pkl', 'rb') as f:
+        rf_model = pickle.load(f)
     with open('dictionary.pkl', 'rb') as f:
         dictionary = pickle.load(f)
+    with open('vectorizer.pkl', 'rb') as f:
+        vectorizer = pickle.load(f)
+    with open('mlb.pkl', 'rb') as f:
+        mlb = pickle.load(f)
 
     # Get the input text from the request
     data = request.get_json()
@@ -43,19 +49,24 @@ def predict():
 
     # Create a bag-of-words representation of the input text
     bow = dictionary.doc2bow(tokens)
+    vec = vectorizer.transform([' '.join(tokens)])
 
-    # Perform topic inference
-    topics = model[bow]
+    # Perform topic inference and tag prediction
+    lda_topics = lda_model[bow]
+    rf_prediction = rf_model.predict(vec)
+    tags = mlb.inverse_transform(rf_prediction)
 
-    # Convert topics to a JSON serializable format
+    # Convert topics and tags to a JSON serializable format
     topics_serializable = [
         {'topic': topic_tags[topic[0]], 'probability': float(topic[1])}
-        for topic in topics
+        for topic in lda_topics
     ]
+    tags_serializable = list(tags[0])
 
-    # Return the inferred topics
-    result = {'topics': topics_serializable}
+    # Return the inferred topics and predicted tags
+    result = {'topics': topics_serializable, 'tags': tags_serializable}
     return jsonify(result)
+
 
 
 if __name__ == '__main__':
