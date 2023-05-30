@@ -23,8 +23,8 @@ common_words_for_topics = pickle.load(open('common_words_for_topics.pkl', 'rb'))
 app = Flask(__name__)
 
 # Download stopwords data
-#nltk.download('stopwords')
-#nltk.download('punkt')
+nltk.download('stopwords')
+nltk.download('punkt')
 
 @app.route('/predict', methods=['POST'])
 def predict():
