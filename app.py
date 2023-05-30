@@ -12,16 +12,16 @@ nltk.download('punkt')
 
 # Define the topic tags
 topic_tags = {
-    0: 'Technology',
-    1: 'Sports',
-    2: 'Politics',
-    3: 'Health',
-    4: 'Entertainment',
-    5: 'Business',
-    6: 'Science',
-    7: 'Education',
-    8: 'Art',
-    9: 'Travel'
+    0: 'html',
+    1: 'image',
+    2: 'request',
+    3: 'string',
+    4: 'android',
+    5: 'java',
+    6: 'data',
+    7: 'file',
+    8: 'table',
+    9: 'application'
 }
 
 @app.route('/predict', methods=['POST'])
