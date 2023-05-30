@@ -22,6 +22,12 @@ vectorizer = pickle.load(open('vectorizer.pkl', 'rb'))
 mlb = pickle.load(open('mlb.pkl', 'rb'))
 common_words_for_topics = pickle.load(open('common_words_for_topics.pkl', 'rb'))
 
+def decode_tags(tags_pred, classes):
+    decoded_tags = []
+    for tags in tags_pred:
+        decoded_tags.append([classes[i] for i, tag in enumerate(tags) if tag == 1])
+    return decoded_tags
+
 app = Flask(__name__)
 
 # Download stopwords data
@@ -55,7 +61,7 @@ def predict():
         # Infer tags with the Random Forest model
         x = vectorizer.transform([data['text']])
         tags_pred = rf_model.predict(x)
-        tags_pred = mlb.inverse_transform(tags_pred)
+        tags_pred = decode_tags(tags_pred, mlb.classes_)
         tags_pred = [list(filter(None, tags)) for tags in tags_pred]  # Remove empty tags and convert numpy arrays to Python lists
 
         # Prepare the response
