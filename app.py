@@ -1,13 +1,23 @@
-from flask import Flask, request, jsonify
-import nltk
-from nltk.corpus import stopwords
-from nltk.tokenize import word_tokenize
 import pickle
+from flask import Flask, request, jsonify
 import logging
+from gensim import corpora
+from gensim.models import LdaModel
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.feature_extraction.text import TfidfVectorizer
+from nltk.corpus import stopwords
 
-# Set up logging
+# Setup logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Load the pre-trained models, vectorizer, dictionary, label binarizer, and topic common words
+lda_model = pickle.load(open('lda_model.pkl', 'rb'))
+rf_model = pickle.load(open('rf_model.pkl', 'rb'))
+dictionary = pickle.load(open('dictionary.pkl', 'rb'))
+vectorizer = pickle.load(open('vectorizer.pkl', 'rb'))
+mlb = pickle.load(open('mlb.pkl', 'rb'))
+common_words_for_topics = pickle.load(open('common_words_for_topics.pkl', 'rb'))
 
 app = Flask(__name__)
 
@@ -31,56 +41,43 @@ topic_tags = {
 
 @app.route('/predict', methods=['POST'])
 def predict():
+    data = request.get_json(force=True)
+    logger.info('Data received: ' + str(data))
+
     try:
-        logger.info('Loading the models and dictionary...')
-        # Load the LDA model, RF model, dictionary, vectorizer and label binarizer
-        with open('lda_model.pkl', 'rb') as f:
-            lda_model = pickle.load(f)
-        with open('rf_model.pkl', 'rb') as f:
-            rf_model = pickle.load(f)
-        with open('dictionary.pkl', 'rb') as f:
-            dictionary = pickle.load(f)
-        with open('vectorizer.pkl', 'rb') as f:
-            vectorizer = pickle.load(f)
-        with open('mlb.pkl', 'rb') as f:
-            mlb = pickle.load(f)
-        logger.info('Models and dictionary loaded successfully.')
+        # Preprocess the data
+        stop_words = set(stopwords.words('english'))
 
-        # Get the input text from the request
-        logger.info('Processing the request data...')
-        data = request.get_json()
-        text = data['text']
+        def preprocess(text):
+            result = []
+            for token in gensim.utils.simple_preprocess(text):
+                if token not in gensim.parsing.preprocessing.STOPWORDS and len(token) > 3 and token not in stop_words:
+                    result.append(token)
+            return result
 
-        # Preprocess the input text
-        tokens = word_tokenize(text.lower())
-        tokens = [token for token in tokens if token.isalpha()]
-        tokens = [token for token in tokens if token not in stopwords.words('english')]
+        processed_data = preprocess(data['text'])
+        corpus = dictionary.doc2bow(processed_data)
 
-        # Create a bag-of-words representation of the input text
-        bow = dictionary.doc2bow(tokens)
+        # Infer topics with the LDA model
+        topics_pred = lda_model[corpus]
+        topics_pred = sorted(topics_pred, key=lambda x: x[1], reverse=True)  # sort by probability
+        topics_pred = [{'topic': common_words_for_topics[i], 'probability': prob} for i, prob in topics_pred]
 
-        # Perform LDA topic inference
-        lda_topics = lda_model[bow]
+        # Infer tags with the Random Forest model
+        x = vectorizer.transform([data['text']])
+        tags_pred = rf_model.predict(x)
+        tags_pred = mlb.inverse_transform(tags_pred)
 
-        # Perform RF tag prediction
-        X = vectorizer.transform([' '.join(tokens)])
-        y = rf_model.predict(X)
-        tags = mlb.inverse_transform(y)
-
-        # Convert topics to a JSON serializable format
-        lda_topics_serializable = [
-            {'topic': topic_tags[topic[0]], 'probability': float(topic[1])}
-            for topic in lda_topics
-        ]
-        tags_serializable = list(tags[0])
-
-        # Return the inferred topics and predicted tags
-        result = {'topics': lda_topics_serializable, 'tags': tags_serializable}
-        logger.info('Inference complete. Sending response...')
-        return jsonify(result)
+        # Prepare the response
+        response = {
+            'topics': topics_pred,
+            'rf_tags': tags_pred
+        }
+        logger.info('Prediction successful: ' + str(response))
+        return jsonify(response)
 
     except Exception as e:
-        logger.error('An error occurred: ' + str(e))
+        logger.error('An error occurred during prediction: ' + str(e))
         return jsonify({'error': str(e)})
 
 if __name__ == '__main__':
