@@ -8,6 +8,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from nltk.corpus import stopwords
 import nltk
 import gensim
+import numpy as np
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -49,12 +50,13 @@ def predict():
         # Infer topics with the LDA model
         topics_pred = lda_model[corpus]
         topics_pred = sorted(topics_pred, key=lambda x: x[1], reverse=True)  # sort by probability
-        topics_pred = [{'topic': common_words_for_topics[i], 'probability': prob} for i, prob in topics_pred]
+        topics_pred = [{'topic': common_words_for_topics[i], 'probability': float(prob)} for i, prob in topics_pred]
 
         # Infer tags with the Random Forest model
         x = vectorizer.transform([data['text']])
         tags_pred = rf_model.predict(x)
         tags_pred = mlb.inverse_transform(tags_pred)
+        tags_pred = [list(tags) for tags in tags_pred]  # Convert numpy arrays to Python lists
 
         # Prepare the response
         response = {
