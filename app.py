@@ -62,6 +62,7 @@ def predict():
         x = vectorizer.transform([data['text']])
         tags_pred = rf_model.predict(x)
         tags_pred = decode_tags(tags_pred, mlb.classes_)
+        print(tags_pred)
         tags_pred = [list(filter(None, tags)) for tags in tags_pred]  # Remove empty tags and convert numpy arrays to Python lists
 
         # Prepare the response
