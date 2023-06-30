@@ -1,17 +1,18 @@
-import pickle
 from flask import Flask, request, jsonify
-import logging
 from gensim import corpora
 from gensim.models import LdaModel
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.preprocessing import MultiLabelBinarizer
 from nltk.corpus import stopwords
 import nltk
 import gensim
 import numpy as np
+import logging
+import pickle
 
 # Setup logging
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.WARNING)  # Reduce logging level to WARNING
 logger = logging.getLogger(__name__)
 
 # Load the pre-trained models, vectorizer, dictionary, label binarizer, and topic common words
@@ -55,27 +56,26 @@ def predict():
 
         # Infer topics with the LDA model
         topics_pred = lda_model[corpus]
-        topics_pred = sorted(topics_pred, key=lambda x: x[1], reverse=True)  # sort by probability
-        topics_pred = [{'topic': common_words_for_topics[i], 'probability': float(prob)} for i, prob in topics_pred]
+        topic_pred = max(topics_pred, key=lambda x: x[1])  # Get the most probable topic
+        words_for_topic = lda_model.show_topic(topic_pred[0], topn=5)
+        topic_pred = {'topic': [word for word, _ in words_for_topic], 'probability': float(topic_pred[1])}
 
         # Infer tags with the Random Forest model
         x = vectorizer.transform([data['text']])
         tags_pred = rf_model.predict(x)
         tags_pred = decode_tags(tags_pred, mlb.classes_)
-        print(tags_pred)
-        tags_pred = [list(filter(None, tags)) for tags in tags_pred]  # Remove empty tags and convert numpy arrays to Python lists
 
         # Prepare the response
         response = {
-            'topics': topics_pred,
+            'topics': topic_pred,
             'rf_tags': tags_pred
         }
         logger.info('Prediction successful: ' + str(response))
         return jsonify(response)
 
     except Exception as e:
-        logger.error('An error occurred during prediction: ' + str(e))
-        return jsonify({'error': str(e)})
+        logger.error('An error occurred during prediction: ' + str(response))
+        return jsonify(response)
 
 if __name__ == '__main__':
     app.run()
